@@ -1,0 +1,28 @@
+canvas
+{
+	border: 0px solid black;
+}
+body
+{
+	margin: 0;
+}
+button
+{
+	align-items: center;
+	height: 10%;
+	margin: 4px;
+	padding: 8px;
+	font-size: x-large;
+	text-align: center;
+	border-radius: 10%;
+}
+.child-left
+{
+	display: inline-block;
+	float: left;
+}
+.child-right
+{
+	display: inline-block;
+	float: right;
+}
