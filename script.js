@@ -1,22 +1,32 @@
-HEIGHT = window.innerHeight
-WIDTH = window.innerWidth
-SCALE = 32
+const HEIGHT = window.innerHeight
+const WIDTH = window.innerWidth
+const SCALE = 32
 
-BOARD_WIDTH_HALF = 16
-BOARD_LENGTH = 32
+const BOARD_WIDTH_HALF = 16
+const BOARD_LENGTH = 32
 
-BALL_RADIUS = 0.5
+const BALL_RADIUS = 0.5
 
-BACKGROUND_COLOR = 'black'
-WALL_COLOR = 'grey'
-WALL_LINE_COLOR = 'white'
-BALL_LINE_COLOR = 'black'
-BALL_COLOR = 'white'
+const BACKGROUND_COLOR = 'black'
+const WALL_COLOR = 'grey'
+const WALL_LINE_COLOR = 'white'
+const BALL_LINE_COLOR = 'black'
+const BALL_COLOR = 'white'
 
-var canvas = document.querySelector("canvas")
-canvas.width = WIDTH
-canvas.height = HEIGHT
-var c = canvas.getContext("2d");
+const X_OFFSET = WIDTH / 2
+const Y_OFFSET = HEIGHT / 1.2
+
+const START = 20
+const colors = ["red", "orange", "yellow", "green", "blue", "purple"]
+
+const gravity = -0.01
+const breakage = 5
+const BAT_RADIUS = 4
+const BAT_CENTRE_X = -BAT_RADIUS / 2
+const COEFFICIENT_RESTITUTION = 0.5
+
+const BREAK_VELOCITY = 0.4
+const BREAK_INITIAL_PHI = Math.PI / 6
 
 class Vector {
 	constructor(x, y, z) {
@@ -25,6 +35,16 @@ class Vector {
 		this.z = z
 	}
 }
+
+const camera = new Vector(0, -32, 24)
+const BALL_INIT_V = new Vector(0.05, 0.2, 0)
+const BALL_INIT_R = new Vector(0, 10, 0.5)
+
+var canvas = document.querySelector("canvas")
+canvas.width = WIDTH
+canvas.height = HEIGHT
+var c = canvas.getContext("2d");
+
 function add(v1, v2) {
 	return new Vector(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z)
 }
@@ -66,27 +86,30 @@ class Particle {
 	}
 }
 
-
-
-const camera = new Vector(0, -32, 24)
-const ball = new Ball(new Vector(0, 10, 0.5), new Vector(0.05, 0.2, 0))
+const bat = new Vector(0, BAT_CENTRE_X, 0.5)
+const ball = new Ball(BALL_INIT_R, BALL_INIT_V)
 const blocks = []
-let particles = []
-const gravity = -0.01
-const breakage = 5
-const BAT_RADIUS = 4
-const bat = new Vector(0, -2, 0.5)
+const particles = []
 
-function init() {
-	START = 20
-	for (i = -BOARD_WIDTH_HALF; i < BOARD_WIDTH_HALF; i++) {
+function init() 
+{
+	for (i = -BOARD_WIDTH_HALF; i < BOARD_WIDTH_HALF; i++) 
+	{
+		for(j = 0; j < colors.length; j++) 
+		{
+			b = new Block(new Vector(i + 0.5, START + 0.5 + j,0.5), colors[j])
+			blocks.push(b)
+		}
+		/*
 		blocks.push(new Block(new Vector(i + 0.5, START + 5.5, 0.5), "red"))
 		blocks.push(new Block(new Vector(i + 0.5, START + 4.5, 0.5), "orange"))
 		blocks.push(new Block(new Vector(i + 0.5, START + 3.5, 0.5), "yellow"))
 		blocks.push(new Block(new Vector(i + 0.5, START + 2.5, 0.5), "green"))
 		blocks.push(new Block(new Vector(i + 0.5, START + 1.5, 0.5), "blue"))
 		blocks.push(new Block(new Vector(i + 0.5, START + 0.5, 0.5), "purple"))
+		*/
 	}
+	
 
 
 	const key = (b1, b2) => {
@@ -97,9 +120,7 @@ function init() {
 		else if (d2 > d1) { return 1; }
 		else return 0
 	}
-	console.log(blocks)
 	blocks.sort(key)
-	console.log(blocks)
 
 }
 init()
@@ -114,36 +135,36 @@ function project(v) {
 	let t = -camera.y / (v.y - camera.y)
 	let x = (v.x - camera.x) * t + camera.x
 	let z = (v.z - camera.z) * t + camera.z
-	return [WIDTH / 2 + x * SCALE, HEIGHT / 1.2 - z * SCALE]
+	return [X_OFFSET + x * SCALE, Y_OFFSET - z * SCALE]
 }
 function project_inverse(coord, y) {
-	let x = (coord[0] - WIDTH / 2) / SCALE
-	let z = (HEIGHT / 1.2 - coord[1]) / SCALE
+	let x = (coord[0] - X_OFFSET) / SCALE
+	let z = (Y_OFFSET - coord[1]) / SCALE
 	let t = -camera.y / (y - camera.y)
 	return new Vector((x - camera.x) / t + camera.x, y, (z - camera.z) / t + camera.z)
 }
 
+function random_v() {
+	theta = Math.random() * Math.PI * 2
+	phi = Math.random() * (Math.PI / 2 - BREAK_INITIAL_PHI) + BREAK_INITIAL_PHI
+	return multiply(new Vector(
+		Math.cos(theta) * Math.cos(phi),
+		Math.sin(theta) * Math.cos(phi),
+		Math.sin(phi)),
+		BREAK_VELOCITY)
 
-function spray(b)
-{
-	r = b.r
-	for(i=0;i<breakage*breakage*breakage;i++)
-	{
-		theta = Math.random() * Math.PI * 2
-				phi = Math.random() * Math.PI / 4 + Math.PI/4
-				v = multiply(new Vector(
-				Math.cos(theta) * Math.cos(phi), 
-				Math.sin(theta) * Math.cos(phi), 
-				Math.sin(phi)), 
-				0.4)
-				p = new Particle(r, v, b.color, 1 / breakage)
-				particles.push(p)
+}
+
+function spray(b) {
+	for (i = 0; i < breakage * breakage * breakage; i++) {
+		p = new Particle(b.r, random_v(), b.color, 1 / breakage)
+		particles.push(p)
 	}
-				
+
 }
 function explode(b) {
 	b.active = false
-	
+
 	for (i = 0; i < breakage; i++) {
 		for (j = 0; j < breakage; j++) {
 			for (k = 0; k < breakage; k++) {
@@ -152,14 +173,7 @@ function explode(b) {
 				fz = (k + 0.5) / breakage
 				r = add(b.r, new Vector(-0.5, -0.5, -0.5))
 				r = add(r, new Vector(fx, fy, fz))
-				theta = Math.random() * Math.PI * 2
-				phi = Math.random() * Math.PI / 4 + Math.PI/4
-				v = multiply(new Vector(
-				Math.cos(theta) * Math.cos(phi), 
-				Math.sin(theta) * Math.cos(phi), 
-				Math.sin(phi)), 
-				0.4)
-				p = new Particle(r, v, b.color, 1 / breakage)
+				p = new Particle(r, random_v(), b.color, 1 / breakage)
 				particles.push(p)
 
 			}
@@ -186,7 +200,7 @@ function physics(dt) {
 	if (ball.r.y - ball.radius < 0) {
 		spray(ball)
 		ball.v.y = Math.abs(ball.v.y)
-		ball.r = new Vector(0,10,0.5)
+		ball.r = new Vector(0, 10, 0.5)
 	}
 
 	// bat reflections
@@ -195,7 +209,7 @@ function physics(dt) {
 		normal = multiply(diff, 1 / magnitude(diff))
 		dot_n = normal.x * ball.v.x + normal.y * ball.v.y
 		ball.v = add(multiply(normal, -2 * dot_n), ball.v)
-		// -u + v = 2*(-u).n n
+
 	}
 
 	// block reflections
@@ -236,20 +250,15 @@ function physics(dt) {
 	ball.r = add(ball.r, multiply(ball.v, dt))
 
 
-	new_particles = []
 	for (p of particles) {
 		p.v = add(p.v, multiply(new Vector(0, 0, gravity), dt))
 		p.r = add(p.r, multiply(p.v, dt))
-		if (true) {
-			new_particles.push(p)
-		}
-		if(p.r.z <0 && p.v.z<0)
-		{
-			p.v.z = Math.abs(p.v.z)*0.5
+
+		if (p.r.z < 0 && p.v.z < 0) {
+			p.v.z = Math.abs(p.v.z) * COEFFICIENT_RESTITUTION
 		}
 
 	}
-	particles = new_particles
 
 }
 
@@ -423,7 +432,6 @@ function render() {
 	c.fillStyle = BACKGROUND_COLOR
 	c.fillRect(0, 0, WIDTH, HEIGHT)
 	draw_grid()
-
 	dist_ball = dist(ball.r, camera)
 	ball_drawn = false
 	for (b of blocks) {
@@ -443,22 +451,6 @@ function render() {
 	draw_bat()
 	draw_particles()
 
-	//test
-	/*
-	left = project(new Vector(100,0,0))
-	right = project(new Vector(-100,0,0))
-	up = project(new Vector(0,1,0))
-	down = project(new Vector(0,-1,0))
-
-	c.strokeStyle = "red"
-	c.beginPath()
-	c.moveTo(left[0],left[1])
-	c.lineTo(right[0],right[1])
-	c.moveTo(up[0],up[1])
-	c.lineTo(down[0],down[1])
-	c.closePath()
-	c.stroke()
-	*/
 }
 
 function animate() {
