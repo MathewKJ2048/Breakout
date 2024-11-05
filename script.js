@@ -1,5 +1,12 @@
-const HEIGHT = window.innerHeight
-const WIDTH = window.innerWidth
+function HEIGHT()
+{
+	return window.innerHeight
+}
+function WIDTH()
+{
+	return window.innerWidth
+}
+
 const SCALE = 32
 
 const BOARD_WIDTH_HALF = 16
@@ -13,8 +20,14 @@ const WALL_LINE_COLOR = 'white'
 const BALL_LINE_COLOR = 'black'
 const BALL_COLOR = 'white'
 
-const X_OFFSET = WIDTH / 2
-const Y_OFFSET = HEIGHT / 1.2
+function X_OFFSET()
+{
+	return WIDTH()/2
+}
+function Y_OFFSET()
+{
+	return HEIGHT()/1.2
+}
 
 const START = 20
 const colors = ["red", "orange", "yellow", "green", "blue", "purple"]
@@ -41,8 +54,14 @@ const BALL_INIT_V = new Vector(0.05, 0.2, 0)
 const BALL_INIT_R = new Vector(0, 10, 0.5)
 
 var canvas = document.querySelector("canvas")
-canvas.width = WIDTH
-canvas.height = HEIGHT
+function set_canvas_size()
+{
+	canvas.width = WIDTH()
+	canvas.height = HEIGHT()
+}
+set_canvas_size()
+
+
 var c = canvas.getContext("2d");
 
 function add(v1, v2) {
@@ -135,11 +154,11 @@ function project(v) {
 	let t = -camera.y / (v.y - camera.y)
 	let x = (v.x - camera.x) * t + camera.x
 	let z = (v.z - camera.z) * t + camera.z
-	return [X_OFFSET + x * SCALE, Y_OFFSET - z * SCALE]
+	return [X_OFFSET() + x * SCALE, Y_OFFSET() - z * SCALE]
 }
 function project_inverse(coord, y) {
-	let x = (coord[0] - X_OFFSET) / SCALE
-	let z = (Y_OFFSET - coord[1]) / SCALE
+	let x = (coord[0] - X_OFFSET()) / SCALE
+	let z = (Y_OFFSET() - coord[1]) / SCALE
 	let t = -camera.y / (y - camera.y)
 	return new Vector((x - camera.x) / t + camera.x, y, (z - camera.z) / t + camera.z)
 }
@@ -430,7 +449,7 @@ function draw_bat() {
 
 function render() {
 	c.fillStyle = BACKGROUND_COLOR
-	c.fillRect(0, 0, WIDTH, HEIGHT)
+	c.fillRect(0, 0, WIDTH(), HEIGHT())
 	draw_grid()
 	dist_ball = dist(ball.r, camera)
 	ball_drawn = false
@@ -464,5 +483,7 @@ canvas.addEventListener("mousemove", function (event) {
 	coords = [event.x, event.y]
 	v = project_inverse(coords, 0)
 	bat.x = v.x
+	canvas.width = WIDTH()
+	canvas.height = HEIGHT()
 
 })
